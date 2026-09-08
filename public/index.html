@@ -1,0 +1,262 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Club Task Manager</title>
+  <meta name="description" content="Shared weekly task manager for your club — track tasks, campus leads, and deadlines." />
+  <link rel="preconnect" href="https://fonts.googleapis.com" />
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800&display=swap" rel="stylesheet" />
+  <link rel="stylesheet" href="style.css" />
+</head>
+<body>
+  <!-- ── LOGIN SCREEN ── -->
+  <div id="login-screen" class="login-screen hidden">
+    <div class="login-card">
+      <div class="login-logo">
+        <div class="logo-icon">✦</div>
+        <h1 id="login-club-name">Club Task Manager</h1>
+        <p>Enter the shared password to continue</p>
+      </div>
+      <form id="login-form">
+        <div class="input-group">
+          <label for="password-input">Password</label>
+          <div class="password-wrapper">
+            <input type="password" id="password-input" placeholder="Enter club password" autocomplete="current-password" />
+            <button type="button" id="toggle-pw" class="toggle-pw" aria-label="Show password">👁</button>
+          </div>
+        </div>
+        <div id="login-error" class="error-msg hidden">Incorrect password. Try again.</div>
+        <button type="submit" class="btn btn-primary btn-full" id="login-btn">
+          <span>Unlock</span>
+        </button>
+      </form>
+    </div>
+  </div>
+
+  <!-- ── MAIN APP ── -->
+  <div id="app" class="app hidden">
+    <!-- Sidebar -->
+    <aside class="sidebar" id="sidebar">
+      <div class="sidebar-header">
+        <div class="sidebar-logo">✦</div>
+        <div>
+          <div class="sidebar-title" id="sidebar-club-name">Club Tasks</div>
+          <div class="sidebar-week" id="sidebar-week-label">Loading...</div>
+        </div>
+      </div>
+      <nav class="sidebar-nav">
+        <button class="nav-item active" data-view="dashboard" id="nav-dashboard">
+          <span class="nav-icon">📋</span> This Week
+        </button>
+        <button class="nav-item" data-view="nextweek" id="nav-nextweek">
+          <span class="nav-icon">📅</span> Next Week
+        </button>
+        <button class="nav-item" data-view="archive" id="nav-archive">
+          <span class="nav-icon">🗂</span> Archive
+        </button>
+        <button class="nav-item" data-view="settings" id="nav-settings">
+          <span class="nav-icon">⚙️</span> Settings
+        </button>
+      </nav>
+      <div class="sidebar-footer">
+        <button class="btn-logout" id="logout-btn">Sign Out</button>
+      </div>
+    </aside>
+
+    <!-- Mobile header -->
+    <header class="mobile-header">
+      <button class="hamburger" id="hamburger-btn" aria-label="Menu">☰</button>
+      <span class="mobile-title" id="mobile-club-name">Club Tasks</span>
+      <button class="btn btn-primary btn-sm" id="mobile-add-btn">+ Add</button>
+    </header>
+
+    <!-- Main content -->
+    <main class="main-content" id="main-content">
+
+      <!-- ── DASHBOARD VIEW ── -->
+      <section id="view-dashboard" class="view active">
+        <div class="view-header">
+          <div>
+            <h1 class="view-title">This Week</h1>
+            <p class="view-subtitle" id="dashboard-week-range">Loading week...</p>
+          </div>
+          <div class="view-actions">
+            <div class="group-toggle">
+              <button class="group-btn active" id="group-by-status" data-group="status">By Status</button>
+              <button class="group-btn" id="group-by-lead" data-group="lead">By Lead</button>
+            </div>
+            <button class="btn btn-primary" id="add-task-btn">
+              <span>＋</span> Add Task
+            </button>
+          </div>
+        </div>
+
+        <div class="stats-row" id="dashboard-stats"></div>
+        <div id="dashboard-content" class="task-groups"></div>
+      </section>
+
+      <!-- ── NEXT WEEK VIEW ── -->
+      <section id="view-nextweek" class="view">
+        <div class="view-header">
+          <div>
+            <h1 class="view-title">Next Week</h1>
+            <p class="view-subtitle" id="nextweek-range">Loading...</p>
+          </div>
+          <button class="btn btn-primary" id="add-nextweek-btn">
+            <span>＋</span> Add Task
+          </button>
+        </div>
+        <div id="nextweek-content" class="task-groups"></div>
+      </section>
+
+      <!-- ── ARCHIVE VIEW ── -->
+      <section id="view-archive" class="view">
+        <div class="view-header">
+          <div>
+            <h1 class="view-title">Archive</h1>
+            <p class="view-subtitle">Past weeks — read only</p>
+          </div>
+        </div>
+        <div id="archive-week-list" class="archive-list"></div>
+        <div id="archive-tasks" class="task-groups hidden"></div>
+      </section>
+
+      <!-- ── SETTINGS VIEW ── -->
+      <section id="view-settings" class="view">
+        <div class="view-header">
+          <div>
+            <h1 class="view-title">Settings</h1>
+            <p class="view-subtitle">Configure your club workspace</p>
+          </div>
+        </div>
+        <div class="settings-grid">
+          <div class="settings-card">
+            <h2>Club Identity</h2>
+            <div class="input-group">
+              <label for="setting-club-name">Club Name</label>
+              <input type="text" id="setting-club-name" placeholder="e.g. Engineering Society" />
+            </div>
+            <div class="input-group">
+              <label for="setting-week-start">Week Starts On</label>
+              <select id="setting-week-start">
+                <option value="0">Sunday</option>
+                <option value="1">Monday</option>
+                <option value="6">Saturday</option>
+              </select>
+            </div>
+            <button class="btn btn-primary" id="save-general-settings">Save Changes</button>
+            <div id="settings-general-msg" class="success-msg hidden">Saved!</div>
+          </div>
+          <div class="settings-card">
+            <h2>Change Password</h2>
+            <div class="input-group">
+              <label for="current-pw">Current Password</label>
+              <input type="password" id="current-pw" placeholder="Current password" />
+            </div>
+            <div class="input-group">
+              <label for="new-pw">New Password</label>
+              <input type="password" id="new-pw" placeholder="New password (min 6 chars)" />
+            </div>
+            <div class="input-group">
+              <label for="confirm-pw">Confirm New Password</label>
+              <input type="password" id="confirm-pw" placeholder="Repeat new password" />
+            </div>
+            <button class="btn btn-primary" id="save-password-btn">Update Password</button>
+            <div id="settings-pw-msg" class="success-msg hidden"></div>
+          </div>
+        </div>
+      </section>
+
+    </main>
+  </div>
+
+  <!-- ── TASK MODAL ── -->
+  <div id="task-modal" class="modal-overlay hidden">
+    <div class="modal">
+      <div class="modal-header">
+        <h2 id="modal-title">Add Task</h2>
+        <button class="modal-close" id="modal-close-btn" aria-label="Close">✕</button>
+      </div>
+      <form id="task-form" class="modal-body">
+        <input type="hidden" id="task-id" />
+        <div class="form-row">
+          <div class="input-group input-group--full">
+            <label for="task-title">Task Title <span class="required">*</span></label>
+            <input type="text" id="task-title" placeholder="e.g. Design event banner" required />
+          </div>
+        </div>
+        <div class="form-row">
+          <div class="input-group input-group--full">
+            <label for="task-description">Description <span class="optional">(optional)</span></label>
+            <textarea id="task-description" rows="2" placeholder="Short notes about this task..."></textarea>
+          </div>
+        </div>
+        <div class="form-row">
+          <div class="input-group">
+            <label for="task-lead">Assigned To</label>
+            <input type="text" id="task-lead" placeholder="Assigned person" list="leads-datalist" autocomplete="off" />
+            <datalist id="leads-datalist"></datalist>
+          </div>
+          <div class="input-group">
+            <label for="task-priority">Priority</label>
+            <select id="task-priority">
+              <option value="Low">Low</option>
+              <option value="Medium" selected>Medium</option>
+              <option value="High">High</option>
+            </select>
+          </div>
+        </div>
+        <div class="form-row">
+          <div class="input-group">
+            <label for="task-due">Due Date</label>
+            <input type="date" id="task-due" />
+          </div>
+          <div class="input-group">
+            <label for="task-status">Status</label>
+            <select id="task-status">
+              <option value="Not Started">Not Started</option>
+              <option value="In Progress">In Progress</option>
+              <option value="Done">Done</option>
+              <option value="Carried Over">Carried Over</option>
+            </select>
+          </div>
+        </div>
+        <div class="input-group hidden" id="week-field-group">
+          <label for="task-week">Add to Week</label>
+          <select id="task-week">
+            <option value="current">This Week</option>
+            <option value="next">Next Week</option>
+          </select>
+        </div>
+        <div class="modal-footer">
+          <button type="button" class="btn btn-ghost" id="modal-cancel-btn">Cancel</button>
+          <button type="submit" class="btn btn-primary" id="modal-save-btn">Save Task</button>
+        </div>
+      </form>
+    </div>
+  </div>
+
+  <!-- ── CONFIRM MODAL ── -->
+  <div id="confirm-modal" class="modal-overlay hidden">
+    <div class="modal modal--sm">
+      <div class="modal-header">
+        <h2 id="confirm-title">Confirm</h2>
+        <button class="modal-close" id="confirm-close-btn">✕</button>
+      </div>
+      <div class="modal-body">
+        <p id="confirm-message">Are you sure?</p>
+      </div>
+      <div class="modal-footer">
+        <button class="btn btn-ghost" id="confirm-cancel-btn">Cancel</button>
+        <button class="btn btn-danger" id="confirm-ok-btn">Confirm</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- Mobile overlay -->
+  <div class="sidebar-overlay hidden" id="sidebar-overlay"></div>
+
+  <script src="app.js"></script>
+</body>
+</html>
