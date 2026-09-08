@@ -1,13 +1,14 @@
 require('dotenv').config();
 const express = require('express');
 const session = require('express-session');
-const bcrypt  = require('bcryptjs');
+const bcrypt = require('bcryptjs');
 const { v4: uuidv4 } = require('uuid');
 const mongoose = require('mongoose');
 const path = require('path');
-const os   = require('os');
+const os = require('os');
 
-const app  = express();
+const app = express();
+app.set('trust proxy', 1);
 const PORT = process.env.PORT || 3000;
 
 // ── MongoDB connection ────────────────────────────────────────────────────────
@@ -23,30 +24,30 @@ mongoose.connect(MONGODB_URI)
 
 // ── Schemas ───────────────────────────────────────────────────────────────────
 const TaskSchema = new mongoose.Schema({
-  id:          { type: String, default: uuidv4 },
-  title:       { type: String, required: true },
+  id: { type: String, default: uuidv4 },
+  title: { type: String, required: true },
   description: { type: String, default: '' },
-  campusLead:  { type: String, default: '' },
-  assignedDate:{ type: String, default: '' },
-  dueDate:     { type: String, default: '' },
-  status:      { type: String, default: 'Not Started', enum: ['Not Started','In Progress','Done','Carried Over'] },
-  priority:    { type: String, default: 'Medium', enum: ['Low','Medium','High'] },
-  weekKey:     { type: String, required: true },
+  campusLead: { type: String, default: '' },
+  assignedDate: { type: String, default: '' },
+  dueDate: { type: String, default: '' },
+  status: { type: String, default: 'Not Started', enum: ['Not Started', 'In Progress', 'Done', 'Carried Over'] },
+  priority: { type: String, default: 'Medium', enum: ['Low', 'Medium', 'High'] },
+  weekKey: { type: String, required: true },
   carriedOver: { type: Boolean, default: false },
-  movedAt:     { type: String, default: '' },
-  createdAt:   { type: String, default: () => new Date().toISOString() },
-  updatedAt:   { type: String, default: '' },
+  movedAt: { type: String, default: '' },
+  createdAt: { type: String, default: () => new Date().toISOString() },
+  updatedAt: { type: String, default: '' },
 }, { _id: true });
 
 const ConfigSchema = new mongoose.Schema({
-  key:          { type: String, unique: true, required: true },
+  key: { type: String, unique: true, required: true },
   passwordHash: { type: String, required: true },
   weekStartDay: { type: Number, default: 0 },
-  clubName:     { type: String, default: 'My Club' },
-  knownLeads:   { type: [String], default: [] },
+  clubName: { type: String, default: 'My Club' },
+  knownLeads: { type: [String], default: [] },
 });
 
-const Task   = mongoose.model('Task',   TaskSchema);
+const Task = mongoose.model('Task', TaskSchema);
 const Config = mongoose.model('Config', ConfigSchema);
 
 const DEFAULT_PASSWORD = 'clubpass2024';
@@ -125,7 +126,7 @@ app.put('/api/config', requireAuth, async (req, res) => {
     const cfg = await getConfig();
     const { weekStartDay, clubName, newPassword, currentPassword } = req.body;
     if (weekStartDay !== undefined) cfg.weekStartDay = weekStartDay;
-    if (clubName     !== undefined) cfg.clubName = clubName;
+    if (clubName !== undefined) cfg.clubName = clubName;
     if (newPassword) {
       if (!currentPassword) return res.status(400).json({ error: 'Current password required' });
       if (!bcrypt.compareSync(currentPassword, cfg.passwordHash))
@@ -153,7 +154,7 @@ app.get('/api/tasks/weeks', requireAuth, async (req, res) => {
     const cfg = await getConfig();
     const now = new Date();
     const currentWeekKey = getWeekKey(now, cfg.weekStartDay);
-    const nextWeekKey    = getNextWeekKey(currentWeekKey);
+    const nextWeekKey = getNextWeekKey(currentWeekKey);
     const distinct = await Task.distinct('weekKey');
     const weeks = distinct.sort();
     res.json({ weeks, currentWeekKey, nextWeekKey });
@@ -168,15 +169,15 @@ app.post('/api/tasks', requireAuth, async (req, res) => {
 
     const now = new Date();
     const task = await Task.create({
-      id:           uuidv4(),
+      id: uuidv4(),
       title,
-      description:  description || '',
-      campusLead:   campusLead  || '',
+      description: description || '',
+      campusLead: campusLead || '',
       assignedDate: now.toISOString().split('T')[0],
-      dueDate:      dueDate || '',
-      priority:     priority || 'Medium',
-      weekKey:      weekKey || getWeekKey(now, cfg.weekStartDay),
-      createdAt:    now.toISOString(),
+      dueDate: dueDate || '',
+      priority: priority || 'Medium',
+      weekKey: weekKey || getWeekKey(now, cfg.weekStartDay),
+      createdAt: now.toISOString(),
     });
 
     if (campusLead && !cfg.knownLeads.includes(campusLead)) {
@@ -194,12 +195,12 @@ app.put('/api/tasks/:id', requireAuth, async (req, res) => {
     if (!task) return res.status(404).json({ error: 'Task not found' });
 
     const { title, description, campusLead, dueDate, status, priority } = req.body;
-    if (title       !== undefined) task.title       = title;
+    if (title !== undefined) task.title = title;
     if (description !== undefined) task.description = description;
-    if (campusLead  !== undefined) task.campusLead  = campusLead;
-    if (dueDate     !== undefined) task.dueDate     = dueDate;
-    if (status      !== undefined) task.status      = status;
-    if (priority    !== undefined) task.priority    = priority;
+    if (campusLead !== undefined) task.campusLead = campusLead;
+    if (dueDate !== undefined) task.dueDate = dueDate;
+    if (status !== undefined) task.status = status;
+    if (priority !== undefined) task.priority = priority;
     task.updatedAt = new Date().toISOString();
     await task.save();
 
@@ -225,10 +226,10 @@ app.post('/api/tasks/:id/move-next-week', requireAuth, async (req, res) => {
       d.setDate(d.getDate() + 7);
       task.dueDate = d.toISOString().split('T')[0];
     }
-    task.weekKey     = nextWeekKey;
-    task.status      = 'Carried Over';
+    task.weekKey = nextWeekKey;
+    task.status = 'Carried Over';
     task.carriedOver = true;
-    task.movedAt     = new Date().toISOString();
+    task.movedAt = new Date().toISOString();
     await task.save();
 
     res.json({ task: { ...task.toObject(), id: task.id } });
