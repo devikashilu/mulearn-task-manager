@@ -2,32 +2,40 @@
 <html lang="en">
 <head>
   <meta charset="UTF-8" />
-  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no" />
   <title>Club Task Manager</title>
-  <meta name="description" content="Shared weekly task manager for your club — track tasks, campus leads, and deadlines." />
+  <meta name="description" content="Shared weekly task manager for your club." />
   <link rel="preconnect" href="https://fonts.googleapis.com" />
-  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800&display=swap" rel="stylesheet" />
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet" />
   <link rel="stylesheet" href="style.css" />
 </head>
 <body>
+  <!-- ── LOADING OVERLAY ── -->
+  <div id="initial-loader" class="loader-overlay">
+    <div class="spinner"></div>
+  </div>
+
   <!-- ── LOGIN SCREEN ── -->
-  <div id="login-screen" class="login-screen hidden">
+  <div id="login-screen" class="view-screen hidden">
     <div class="login-card">
       <div class="login-logo">
-        <div class="logo-icon">✦</div>
+        <div class="logo-icon">
+          <svg width="40" height="40" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 2L2 7l10 5 10-5-10-5zM2 17l10 5 10-5M2 12l10 5 10-5"/></svg>
+        </div>
         <h1 id="login-club-name">Club Task Manager</h1>
-        <p>Enter the shared password to continue</p>
       </div>
       <form id="login-form">
         <div class="input-group">
-          <label for="password-input">Password</label>
           <div class="password-wrapper">
             <input type="password" id="password-input" placeholder="Enter club password" autocomplete="current-password" />
-            <button type="button" id="toggle-pw" class="toggle-pw" aria-label="Show password">👁</button>
+            <button type="button" id="toggle-pw" class="btn-icon-soft" aria-label="Show password">
+              <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z"></path><circle cx="12" cy="12" r="3"></circle></svg>
+            </button>
           </div>
         </div>
         <div id="login-error" class="error-msg hidden">Incorrect password. Try again.</div>
-        <button type="submit" class="btn btn-primary btn-full" id="login-btn">
+        <button type="submit" class="btn btn-primary btn-full pill-btn" id="login-btn">
           <span>Unlock</span>
         </button>
       </form>
@@ -36,226 +44,202 @@
 
   <!-- ── MAIN APP ── -->
   <div id="app" class="app hidden">
-    <!-- Sidebar -->
-    <aside class="sidebar" id="sidebar">
-      <div class="sidebar-header">
-        <div class="sidebar-logo">✦</div>
-        <div>
-          <div class="sidebar-title" id="sidebar-club-name">Club Tasks</div>
-          <div class="sidebar-week" id="sidebar-week-label">Loading...</div>
-        </div>
-      </div>
-      <nav class="sidebar-nav">
-        <button class="nav-item active" data-view="dashboard" id="nav-dashboard">
-          <span class="nav-icon">📋</span> This Week
-        </button>
-        <button class="nav-item" data-view="nextweek" id="nav-nextweek">
-          <span class="nav-icon">📅</span> Next Week
-        </button>
-        <button class="nav-item" data-view="archive" id="nav-archive">
-          <span class="nav-icon">🗂</span> Archive
-        </button>
-        <button class="nav-item" data-view="settings" id="nav-settings">
-          <span class="nav-icon">⚙️</span> Settings
-        </button>
-      </nav>
-      <div class="sidebar-footer">
-        <button class="btn-logout" id="logout-btn">Sign Out</button>
-      </div>
-    </aside>
-
-    <!-- Mobile header -->
-    <header class="mobile-header">
-      <button class="hamburger" id="hamburger-btn" aria-label="Menu">☰</button>
-      <span class="mobile-title" id="mobile-club-name">Club Tasks</span>
-      <button class="btn btn-primary btn-sm" id="mobile-add-btn">+ Add</button>
-    </header>
-
     <!-- Main content -->
     <main class="main-content" id="main-content">
-
-      <!-- ── DASHBOARD VIEW ── -->
-      <section id="view-dashboard" class="view active">
-        <div class="view-header">
-          <div>
-            <h1 class="view-title">This Week</h1>
-            <p class="view-subtitle" id="dashboard-week-range">Loading week...</p>
+      
+      <!-- HEADER -->
+      <header class="app-header">
+        <div class="header-top">
+          <div class="header-titles">
+            <h1 class="view-title" id="main-view-title">This Week</h1>
+            <p class="view-subtitle" id="main-view-subtitle">Loading...</p>
           </div>
-          <div class="view-actions">
-            <div class="group-toggle">
-              <button class="group-btn active" id="group-by-status" data-group="status">By Status</button>
-              <button class="group-btn" id="group-by-lead" data-group="lead">By Lead</button>
+          <div class="header-actions">
+            <!-- Progress Ring -->
+            <div class="progress-ring-container" id="header-progress" style="display: none;">
+              <svg class="progress-ring" width="48" height="48">
+                <circle class="progress-ring__circle-bg" stroke="rgba(0,0,0,0.05)" stroke-width="4" fill="transparent" r="20" cx="24" cy="24"/>
+                <circle class="progress-ring__circle" stroke="var(--accent)" stroke-width="4" fill="transparent" r="20" cx="24" cy="24" stroke-dasharray="125.6" stroke-dashoffset="125.6"/>
+              </svg>
+              <span class="progress-text" id="progress-text">0%</span>
             </div>
-            <button class="btn btn-primary" id="add-task-btn">
-              <span>＋</span> Add Task
+            <button class="btn-icon-soft" id="nav-settings-btn" aria-label="Settings">
+              <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="3"></circle><path d="M19.4 15a1.65 1.65 0 0 0 .33 1.82l.06.06a2 2 0 0 1 0 2.83 2 2 0 0 1-2.83 0l-.06-.06a1.65 1.65 0 0 0-1.82-.33 1.65 1.65 0 0 0-1 1.51V21a2 2 0 0 1-2 2 2 2 0 0 1-2-2v-.09A1.65 1.65 0 0 0 9 19.4a1.65 1.65 0 0 0-1.82.33l-.06.06a2 2 0 0 1-2.83 0 2 2 0 0 1 0-2.83l.06-.06a1.65 1.65 0 0 0 .33-1.82 1.65 1.65 0 0 0-1.51-1H3a2 2 0 0 1-2-2 2 2 0 0 1 2-2h.09A1.65 1.65 0 0 0 4.6 9a1.65 1.65 0 0 0-.33-1.82l-.06-.06a2 2 0 0 1 0-2.83 2 2 0 0 1 2.83 0l.06.06a1.65 1.65 0 0 0 1.82.33H9a1.65 1.65 0 0 0 1-1.51V3a2 2 0 0 1 2-2 2 2 0 0 1 2 2v.09a1.65 1.65 0 0 0 1 1.51 1.65 1.65 0 0 0 1.82-.33l.06-.06a2 2 0 0 1 2.83 0 2 2 0 0 1 0 2.83l-.06.06a1.65 1.65 0 0 0-.33 1.82V9a1.65 1.65 0 0 0 1.51 1H21a2 2 0 0 1 2 2 2 2 0 0 1-2 2h-.09a1.65 1.65 0 0 0-1.51 1z"></path></svg>
             </button>
           </div>
         </div>
 
-        <div class="stats-row" id="dashboard-stats"></div>
-        <div id="dashboard-content" class="task-groups"></div>
-      </section>
-
-      <!-- ── NEXT WEEK VIEW ── -->
-      <section id="view-nextweek" class="view">
-        <div class="view-header">
-          <div>
-            <h1 class="view-title">Next Week</h1>
-            <p class="view-subtitle" id="nextweek-range">Loading...</p>
-          </div>
-          <button class="btn btn-primary" id="add-nextweek-btn">
-            <span>＋</span> Add Task
-          </button>
+        <!-- WEEK STRIP -->
+        <div class="week-strip" id="week-strip">
+          <!-- Populated by JS -->
         </div>
-        <div id="nextweek-content" class="task-groups"></div>
-      </section>
 
-      <!-- ── ARCHIVE VIEW ── -->
-      <section id="view-archive" class="view">
-        <div class="view-header">
-          <div>
-            <h1 class="view-title">Archive</h1>
-            <p class="view-subtitle">Past weeks — read only</p>
-          </div>
+        <!-- VIEW TOGGLES -->
+        <div class="view-toggles">
+          <button class="view-tab active" data-view="dashboard">This Week</button>
+          <button class="view-tab" data-view="nextweek">Next Week</button>
+          <button class="view-tab" data-view="archive">Archive</button>
         </div>
-        <div id="archive-week-list" class="archive-list"></div>
-        <div id="archive-tasks" class="task-groups hidden"></div>
-      </section>
+        
+        <div class="filter-toggles hidden" id="filter-container">
+            <span class="group-label" style="margin-bottom:0; margin-right:8px; display:inline-block;">Filter by Assigned To:</span>
+            <select id="assignee-filter" class="styled-select" style="padding: 6px 12px; font-size: 0.85rem; width: auto; min-width: 140px; display:inline-block;">
+              <option value="all">Everyone</option>
+            </select>
+        </div>
+      </header>
 
-      <!-- ── SETTINGS VIEW ── -->
-      <section id="view-settings" class="view">
-        <div class="view-header">
-          <div>
-            <h1 class="view-title">Settings</h1>
-            <p class="view-subtitle">Configure your club workspace</p>
+      <!-- ── VIEWS CONTAINER ── -->
+      <div class="views-container">
+        
+        <!-- DASHBOARD & NEXT WEEK (Use the same container logic) -->
+        <section id="view-tasks" class="view active">
+          <div id="tasks-content" class="task-groups">
+            <!-- Skeleton Loader -->
+            <div class="skeleton-card"></div>
+            <div class="skeleton-card"></div>
+            <div class="skeleton-card"></div>
           </div>
-        </div>
-        <div class="settings-grid">
-          <div class="settings-card">
-            <h2>Club Identity</h2>
-            <div class="input-group">
-              <label for="setting-club-name">Club Name</label>
-              <input type="text" id="setting-club-name" placeholder="e.g. Engineering Society" />
-            </div>
-            <div class="input-group">
-              <label for="setting-week-start">Week Starts On</label>
-              <select id="setting-week-start">
-                <option value="0">Sunday</option>
-                <option value="1">Monday</option>
-                <option value="6">Saturday</option>
-              </select>
-            </div>
-            <button class="btn btn-primary" id="save-general-settings">Save Changes</button>
-            <div id="settings-general-msg" class="success-msg hidden">Saved!</div>
-          </div>
-          <div class="settings-card">
-            <h2>Change Password</h2>
-            <div class="input-group">
-              <label for="current-pw">Current Password</label>
-              <input type="password" id="current-pw" placeholder="Current password" />
-            </div>
-            <div class="input-group">
-              <label for="new-pw">New Password</label>
-              <input type="password" id="new-pw" placeholder="New password (min 6 chars)" />
-            </div>
-            <div class="input-group">
-              <label for="confirm-pw">Confirm New Password</label>
-              <input type="password" id="confirm-pw" placeholder="Repeat new password" />
-            </div>
-            <button class="btn btn-primary" id="save-password-btn">Update Password</button>
-            <div id="settings-pw-msg" class="success-msg hidden"></div>
-          </div>
-        </div>
-      </section>
+        </section>
 
+        <!-- ARCHIVE VIEW -->
+        <section id="view-archive" class="view hidden">
+          <div id="archive-week-list" class="archive-list"></div>
+          <div id="archive-tasks-container" class="hidden">
+            <button class="btn-ghost pill-btn archive-back" id="archive-back-btn">
+              <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M19 12H5M12 19l-7-7 7-7"/></svg>
+              Back to Weeks
+            </button>
+            <div id="archive-tasks-content" class="task-groups"></div>
+          </div>
+        </section>
+
+        <!-- SETTINGS VIEW -->
+        <section id="view-settings" class="view hidden">
+          <div class="settings-grid">
+            <div class="settings-card">
+              <h2>Club Identity</h2>
+              <div class="input-group">
+                <label>Club Name</label>
+                <input type="text" id="setting-club-name" placeholder="e.g. Engineering Society" />
+              </div>
+              <div class="input-group">
+                <label>Week Starts On</label>
+                <select id="setting-week-start" class="styled-select">
+                  <option value="0">Sunday</option>
+                  <option value="1">Monday</option>
+                  <option value="6">Saturday</option>
+                </select>
+              </div>
+              <button class="btn btn-primary pill-btn" id="save-general-settings">Save Changes</button>
+              <div id="settings-general-msg" class="success-msg hidden">Saved!</div>
+            </div>
+            <div class="settings-card">
+              <h2>Change Password</h2>
+              <div class="input-group">
+                <input type="password" id="current-pw" placeholder="Current password" />
+              </div>
+              <div class="input-group">
+                <input type="password" id="new-pw" placeholder="New password (min 6 chars)" />
+              </div>
+              <div class="input-group">
+                <input type="password" id="confirm-pw" placeholder="Confirm new password" />
+              </div>
+              <button class="btn btn-primary pill-btn" id="save-password-btn">Update Password</button>
+              <div id="settings-pw-msg" class="success-msg hidden"></div>
+            </div>
+            <button class="btn btn-ghost pill-btn logout-btn" id="logout-btn">Sign Out</button>
+          </div>
+        </section>
+
+      </div>
     </main>
+
+    <!-- FLOATING ACTION BUTTON -->
+    <button class="fab" id="fab-add-task" aria-label="Add Task">
+      <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M12 5v14M5 12h14"/></svg>
+    </button>
   </div>
 
-  <!-- ── TASK MODAL ── -->
-  <div id="task-modal" class="modal-overlay hidden">
-    <div class="modal">
-      <div class="modal-header">
+  <!-- ── BOTTOM SHEET / MODAL ── -->
+  <div id="task-modal" class="bottom-sheet-overlay hidden">
+    <div class="bottom-sheet">
+      <div class="sheet-handle"></div>
+      <div class="sheet-header">
         <h2 id="modal-title">Add Task</h2>
-        <button class="modal-close" id="modal-close-btn" aria-label="Close">✕</button>
+        <button class="btn-icon-soft" id="modal-close-btn" aria-label="Close">
+          <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M18 6L6 18M6 6l12 12"/></svg>
+        </button>
       </div>
-      <form id="task-form" class="modal-body">
+      <form id="task-form" class="sheet-body">
         <input type="hidden" id="task-id" />
         <div class="form-row">
-          <div class="input-group input-group--full">
-            <label for="task-title">Task Title <span class="required">*</span></label>
-            <input type="text" id="task-title" placeholder="e.g. Design event banner" required />
-          </div>
-        </div>
-        <div class="form-row">
-          <div class="input-group input-group--full">
-            <label for="task-description">Description <span class="optional">(optional)</span></label>
-            <textarea id="task-description" rows="2" placeholder="Short notes about this task..."></textarea>
+          <div class="input-group">
+            <input type="text" id="task-title" placeholder="Task Title" class="large-input" required />
           </div>
         </div>
         <div class="form-row">
           <div class="input-group">
-            <label for="task-lead">Assigned To</label>
-            <input type="text" id="task-lead" placeholder="Assigned person" list="leads-datalist" autocomplete="off" />
+            <textarea id="task-description" rows="2" placeholder="Description (optional)"></textarea>
+          </div>
+        </div>
+        <div class="form-row two-col">
+          <div class="input-group">
+            <label>Assigned To</label>
+            <input type="text" id="task-lead" placeholder="Assignee" list="leads-datalist" autocomplete="off" />
             <datalist id="leads-datalist"></datalist>
           </div>
           <div class="input-group">
-            <label for="task-priority">Priority</label>
-            <select id="task-priority">
-              <option value="Low">Low</option>
-              <option value="Medium" selected>Medium</option>
-              <option value="High">High</option>
-            </select>
-          </div>
-        </div>
-        <div class="form-row">
-          <div class="input-group">
-            <label for="task-due">Due Date</label>
+            <label>Due Date</label>
             <input type="date" id="task-due" />
           </div>
+        </div>
+        <div class="form-row two-col">
           <div class="input-group">
-            <label for="task-status">Status</label>
-            <select id="task-status">
+            <label>Status</label>
+            <select id="task-status" class="styled-select">
               <option value="Not Started">Not Started</option>
               <option value="In Progress">In Progress</option>
               <option value="Done">Done</option>
               <option value="Carried Over">Carried Over</option>
             </select>
           </div>
+          <div class="input-group">
+            <label>Priority</label>
+            <select id="task-priority" class="styled-select">
+              <option value="Low">Low</option>
+              <option value="Medium" selected>Medium</option>
+              <option value="High">High</option>
+            </select>
+          </div>
         </div>
         <div class="input-group hidden" id="week-field-group">
-          <label for="task-week">Add to Week</label>
-          <select id="task-week">
+          <label>Add to Week</label>
+          <select id="task-week" class="styled-select">
             <option value="current">This Week</option>
             <option value="next">Next Week</option>
           </select>
         </div>
-        <div class="modal-footer">
-          <button type="button" class="btn btn-ghost" id="modal-cancel-btn">Cancel</button>
-          <button type="submit" class="btn btn-primary" id="modal-save-btn">Save Task</button>
+        <div class="sheet-footer">
+          <button type="button" class="btn btn-danger pill-btn hidden" id="modal-delete-btn">Delete</button>
+          <div class="spacer"></div>
+          <button type="submit" class="btn btn-primary pill-btn" id="modal-save-btn">Save Task</button>
         </div>
       </form>
     </div>
   </div>
 
   <!-- ── CONFIRM MODAL ── -->
-  <div id="confirm-modal" class="modal-overlay hidden">
-    <div class="modal modal--sm">
-      <div class="modal-header">
-        <h2 id="confirm-title">Confirm</h2>
-        <button class="modal-close" id="confirm-close-btn">✕</button>
-      </div>
-      <div class="modal-body">
-        <p id="confirm-message">Are you sure?</p>
-      </div>
-      <div class="modal-footer">
-        <button class="btn btn-ghost" id="confirm-cancel-btn">Cancel</button>
-        <button class="btn btn-danger" id="confirm-ok-btn">Confirm</button>
+  <div id="confirm-modal" class="confirm-overlay hidden">
+    <div class="confirm-card">
+      <h2 id="confirm-title">Confirm</h2>
+      <p id="confirm-message">Are you sure?</p>
+      <div class="confirm-actions">
+        <button class="btn btn-ghost pill-btn" id="confirm-cancel-btn">Cancel</button>
+        <button class="btn btn-primary pill-btn" id="confirm-ok-btn">Confirm</button>
       </div>
     </div>
   </div>
-
-  <!-- Mobile overlay -->
-  <div class="sidebar-overlay hidden" id="sidebar-overlay"></div>
 
   <script src="app.js"></script>
 </body>
