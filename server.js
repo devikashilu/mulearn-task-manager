@@ -42,7 +42,7 @@ const TaskSchema = new mongoose.Schema({
 const ConfigSchema = new mongoose.Schema({
   key: { type: String, unique: true, required: true },
   passwordHash: { type: String, required: true },
-  weekStartDay: { type: Number, default: 0 },
+  weekStartDay: { type: Number, default: 0 }, // Always 0 (Sunday) — do not change
   clubName: { type: String, default: 'My Club' },
   knownLeads: { type: [String], default: [] },
 });
@@ -62,18 +62,27 @@ async function getConfig() {
 }
 
 // ── Week helpers ──────────────────────────────────────────────────────────────
-function getWeekKey(date, weekStartDay = 0) {
+// Weeks always run Sunday–Saturday (weekStartDay is permanently 0)
+function getWeekKey(date) {
   const d = new Date(date);
+  if (isNaN(d.getTime())) return null;
   d.setHours(0, 0, 0, 0);
-  const diff = (d.getDay() - weekStartDay + 7) % 7;
+  const diff = d.getDay(); // Sunday=0, so diff moves back to the Sunday of this week
   d.setDate(d.getDate() - diff);
-  return d.toISOString().split('T')[0];
+  const y = d.getFullYear();
+  const m = String(d.getMonth() + 1).padStart(2, '0');
+  const day = String(d.getDate()).padStart(2, '0');
+  return `${y}-${m}-${day}`;
 }
 
 function getNextWeekKey(weekKey) {
-  const d = new Date(weekKey + 'T00:00:00');
+  const parts = weekKey.split('-').map(Number);
+  const d = new Date(parts[0], parts[1] - 1, parts[2]);
   d.setDate(d.getDate() + 7);
-  return d.toISOString().split('T')[0];
+  const y = d.getFullYear();
+  const m = String(d.getMonth() + 1).padStart(2, '0');
+  const day = String(d.getDate()).padStart(2, '0');
+  return `${y}-${m}-${day}`;
 }
 
 // ── Middleware ────────────────────────────────────────────────────────────────
@@ -142,7 +151,7 @@ app.put('/api/config', requireAuth, async (req, res) => {
 app.get('/api/tasks', requireAuth, async (req, res) => {
   try {
     const cfg = await getConfig();
-    const weekKey = req.query.week || getWeekKey(new Date(), cfg.weekStartDay);
+    const weekKey = req.query.week || getWeekKey(new Date());
     const tasks = await Task.find({ weekKey }).sort({ createdAt: 1 }).lean();
     // Add plain `id` field from _id if needed
     res.json({ tasks: tasks.map(t => ({ ...t, id: t.id || String(t._id) })), weekKey, knownLeads: cfg.knownLeads });
@@ -153,7 +162,7 @@ app.get('/api/tasks/weeks', requireAuth, async (req, res) => {
   try {
     const cfg = await getConfig();
     const now = new Date();
-    const currentWeekKey = getWeekKey(now, cfg.weekStartDay);
+    const currentWeekKey = getWeekKey(now);
     const nextWeekKey = getNextWeekKey(currentWeekKey);
     const distinct = await Task.distinct('weekKey');
     const weeks = distinct.sort();
@@ -176,7 +185,7 @@ app.post('/api/tasks', requireAuth, async (req, res) => {
       assignedDate: now.toISOString().split('T')[0],
       dueDate: dueDate || '',
       priority: priority || 'Medium',
-      weekKey: weekKey || getWeekKey(now, cfg.weekStartDay),
+      weekKey: weekKey || getWeekKey(now),
       createdAt: now.toISOString(),
     });
 

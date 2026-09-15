@@ -103,33 +103,32 @@
         </section>
 
         <!-- ARCHIVE VIEW -->
-        <section id="view-archive" class="view hidden">
-          <div id="archive-week-list" class="archive-list"></div>
-          <div id="archive-tasks-container" class="hidden">
-            <button class="btn-ghost pill-btn archive-back" id="archive-back-btn">
-              <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M19 12H5M12 19l-7-7 7-7"/></svg>
-              Back to Weeks
-            </button>
-            <div id="archive-tasks-content" class="task-groups"></div>
+        <section id="view-archive" class="view">
+          <div class="archive-header" style="margin-bottom: 20px;">
+            <select id="archive-week-picker" class="styled-select" style="font-size: 1rem; font-weight: 600; padding: 12px; border-radius: var(--radius-md);">
+              <option value="" disabled selected>Select a past week...</option>
+            </select>
+          </div>
+          
+          <div id="archive-week-strip" class="week-strip hidden" style="margin-bottom: 20px;">
+            <!-- Populated by JS -->
+          </div>
+
+          <div id="archive-tasks-container" class="task-groups" style="transition: opacity 0.3s ease;">
+            <div style="text-align:center; padding: 40px; color: var(--text-tertiary);">
+              Select a week to view archived tasks.
+            </div>
           </div>
         </section>
 
         <!-- SETTINGS VIEW -->
-        <section id="view-settings" class="view hidden">
+        <section id="view-settings" class="view">
           <div class="settings-grid">
             <div class="settings-card">
               <h2>Club Identity</h2>
               <div class="input-group">
                 <label>Club Name</label>
                 <input type="text" id="setting-club-name" placeholder="e.g. Engineering Society" />
-              </div>
-              <div class="input-group">
-                <label>Week Starts On</label>
-                <select id="setting-week-start" class="styled-select">
-                  <option value="0">Sunday</option>
-                  <option value="1">Monday</option>
-                  <option value="6">Saturday</option>
-                </select>
               </div>
               <button class="btn btn-primary pill-btn" id="save-general-settings">Save Changes</button>
               <div id="settings-general-msg" class="success-msg hidden">Saved!</div>

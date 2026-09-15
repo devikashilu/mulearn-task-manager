@@ -317,14 +317,42 @@ body {
 .settings-card h2 { font-size: 1.1rem; margin-bottom: 16px; }
 
 .archive-list { display: flex; flex-direction: column; gap: 12px; }
-.archive-week-btn {
-  background: var(--surface-primary); border: none; padding: 20px;
-  border-radius: var(--radius-lg); box-shadow: var(--shadow-soft);
-  display: flex; justify-content: space-between; align-items: center;
-  font-family: inherit; font-size: 1rem; font-weight: 600; cursor: pointer;
+
+/* Archive header with dropdown picker */
+.archive-header { position: relative; }
+.archive-header .styled-select {
+  width: 100%;
+  background: var(--surface-primary);
+  box-shadow: var(--shadow-soft);
+  min-height: 48px;
 }
-.archive-back { margin-bottom: 24px; }
-#view-archive .task-card { background: var(--surface-secondary); box-shadow: none; }
+
+/* Archived task cards — muted, read-only look */
+.archived-card {
+  opacity: 0.75;
+  cursor: default !important;
+  filter: saturate(0.7);
+  animation: archiveFadeIn 0.35s ease;
+}
+.archived-card:active { transform: none !important; }
+.archived-card::after {
+  content: 'Archived';
+  position: absolute; top: 12px; right: 16px;
+  font-size: 0.65rem; font-weight: 700; text-transform: uppercase;
+  letter-spacing: 0.05em;
+  color: var(--text-tertiary);
+  background: var(--surface-secondary);
+  padding: 2px 8px; border-radius: var(--radius-pill);
+}
+
+@keyframes archiveFadeIn {
+  from { opacity: 0; transform: translateY(8px); }
+  to   { opacity: 0.75; transform: translateY(0); }
+}
+
+/* Archive week strip — ensure touch targets */
+#archive-week-strip .day-col { min-width: 44px; min-height: 44px; }
+#archive-week-strip .day-number { min-width: 40px; min-height: 40px; }
 
 /* ── FAB ── */
 .fab {
