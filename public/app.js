@@ -9,7 +9,7 @@ const state = {
   weeks: { current: null, next: null },
   tasksCache: { current: [], next: [], archive: [] },
   knownLeads: [],
-  config: { weekStartDay: 0, clubName: 'Club Tasks' },
+  config: { weekStartDay: 0, clubName: 'MuLearn Task Manager' },
   archiveWeek: null,
   editingTaskId: null,
   addingToWeek: 'current',
