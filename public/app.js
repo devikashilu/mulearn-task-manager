@@ -4,6 +4,7 @@
 
 const state = {
   currentView: 'dashboard',
+  previousView: 'dashboard', // track previous view for settings back-toggle
   assigneeFilter: 'all', // 'all' or specific assignee name
   dayFilter: null,
   weeks: { current: null, next: null },
@@ -57,15 +58,15 @@ async function loadConfigAndShow() {
   const cfg = await GET('/api/config');
   if (cfg) state.config = cfg;
   el('login-club-name').textContent = state.config.clubName || 'Club Tasks';
-  
+
   el('login-screen').classList.add('hidden');
   el('app').classList.remove('hidden');
-  
+
   await loadWeeks();
   await refreshTasks('current');
   await refreshTasks('next');
   renderView('dashboard');
-  
+
   setTimeout(() => el('initial-loader').classList.add('hidden'), 300);
 }
 
@@ -74,7 +75,7 @@ el('login-form').addEventListener('submit', async e => {
   const pw = el('password-input').value;
   const btn = el('login-btn');
   btn.disabled = true; btn.querySelector('span').textContent = 'Checking...';
-  
+
   const res = await POST('/api/login', { password: pw });
   if (res && res.success) {
     el('login-error').classList.add('hidden');
@@ -122,35 +123,41 @@ function setView(view) {
   state.currentView = view;
   // Remove active from all views (CSS .view { display:none }, .view.active { display:block })
   document.querySelectorAll('.view').forEach(v => v.classList.remove('active'));
-  document.querySelectorAll('.view-tab').forEach(b => b.classList.remove('active'));
-  
+  // FIX: use .tab-btn — matches the actual class in index.html
+  document.querySelectorAll('.tab-btn').forEach(b => b.classList.remove('active'));
+
   if (view === 'dashboard' || view === 'nextweek') {
     el('view-tasks').classList.add('active');
     el('week-strip').classList.remove('hidden');
     el('header-progress').style.display = 'flex';
-    el('filter-container').classList.remove('hidden');
+    el('filter-bar').classList.remove('hidden');
   } else if (view === 'archive') {
     el('view-archive').classList.add('active');
     el('week-strip').classList.add('hidden');
     el('header-progress').style.display = 'none';
-    el('filter-container').classList.add('hidden');
+    el('filter-bar').classList.add('hidden');
   } else if (view === 'settings') {
     el('view-settings').classList.add('active');
     el('week-strip').classList.add('hidden');
     el('header-progress').style.display = 'none';
-    el('filter-container').classList.add('hidden');
+    el('filter-bar').classList.add('hidden');
   }
-  
-  const tab = document.querySelector(`.view-tab[data-view="${view}"]`);
+
+  // FIX: use .tab-btn — matches the actual class in index.html
+  const tab = document.querySelector(`.tab-btn[data-view="${view}"]`);
   if (tab) tab.classList.add('active');
 }
 
 async function renderView(view) {
+  // Track previous view (for settings back-toggle); ignore self-navigation
+  if (state.currentView !== view) {
+    state.previousView = state.currentView;
+  }
   state.dayFilter = null;
   setView(view);
   const titleEl = el('main-view-title');
   const subEl = el('main-view-subtitle');
-  
+
   if (view === 'dashboard') {
     titleEl.textContent = 'This Week';
     const { start, end } = weekBounds(state.weeks.current);
@@ -176,10 +183,19 @@ async function renderView(view) {
   }
 }
 
-document.querySelectorAll('.view-tab').forEach(btn => {
+// FIX 1: use .tab-btn (matches HTML), not .view-tab
+document.querySelectorAll('.tab-btn').forEach(btn => {
   btn.addEventListener('click', () => renderView(btn.dataset.view));
 });
-el('nav-settings-btn').addEventListener('click', () => renderView('settings'));
+
+// FIX 3: Settings icon toggles back to previous view if already on settings
+el('nav-settings-btn').addEventListener('click', () => {
+  if (state.currentView === 'settings') {
+    renderView(state.previousView || 'dashboard');
+  } else {
+    renderView('settings');
+  }
+});
 
 // ── Filters ───────────────────────────────────────────────────────────
 el('assignee-filter').addEventListener('change', (e) => {
@@ -252,7 +268,7 @@ function updateProgress(tasks) {
   const total = tasks.length;
   const done = tasks.filter(t => t.status === 'Done').length;
   const pct = total === 0 ? 0 : Math.round((done / total) * 100);
-  
+
   el('progress-text').textContent = `${pct}%`;
   const circle = document.querySelector('.progress-ring__circle');
   if (circle) {
@@ -265,18 +281,18 @@ function renderWeekStrip(startDate, tasks) {
   const strip = el('week-strip');
   const todayStr = fmtDateKey(new Date());
   let html = '';
-  
+
   for (let i = 0; i < 7; i++) {
     const d = new Date(startDate);
     d.setDate(d.getDate() + i);
     const dateStr = fmtDateKey(d);
     const letter = d.toLocaleDateString('en-US', { weekday: 'narrow' });
     const num = d.getDate();
-    
+
     const isToday = dateStr === todayStr;
     const hasTask = tasks.some(t => t.dueDate === dateStr);
     const isActive = state.dayFilter === dateStr;
-    
+
     html += `
       <div class="day-col ${isToday ? 'today' : ''} ${isActive ? 'active' : ''}" data-date="${dateStr}" style="cursor:pointer;">
         <span class="day-letter">${letter}</span>
@@ -290,7 +306,7 @@ function renderWeekStrip(startDate, tasks) {
   strip.innerHTML = html;
 }
 
-window.toggleDayFilter = function(dateStr) {
+window.toggleDayFilter = function (dateStr) {
   if (state.dayFilter === dateStr) {
     state.dayFilter = null;
   } else {
@@ -315,7 +331,7 @@ el('week-strip').addEventListener('click', (e) => {
 // ── Rendering Tasks ───────────────────────────────────────────────────
 function renderTasks(containerId, tasks, readOnly) {
   const container = el(containerId);
-  
+
   // Apply Filter
   let filtered = tasks;
   if (state.assigneeFilter !== 'all') {
@@ -343,7 +359,7 @@ function renderTasks(containerId, tasks, readOnly) {
   });
 
   container.innerHTML = filtered.map(t => renderCard(t, readOnly)).join('');
-  
+
   if (!readOnly) {
     container.querySelectorAll('.task-card').forEach(card => {
       card.addEventListener('click', e => {
@@ -360,8 +376,8 @@ function renderTasks(containerId, tasks, readOnly) {
 
 function renderCard(task, readOnly) {
   const overdue = isOverdue(task);
-  const statusCls = `status-${(task.status || 'Not Started').replace(/\s+/g,'-')}`;
-  
+  const statusCls = `status-${(task.status || 'Not Started').replace(/\s+/g, '-')}`;
+
   const moveBtn = (!readOnly && task.status !== 'Carried Over') ? `
     <button class="move-btn" title="Move to next week">
       <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M5 12h14M12 5l7 7-7 7"/></svg>
@@ -396,7 +412,7 @@ async function initArchiveView() {
   const data = await GET('/api/tasks/weeks');
   if (!data) return;
   const past = data.weeks.filter(w => w < data.currentWeekKey && w !== data.nextWeekKey).reverse();
-  
+
   const picker = el('archive-week-picker');
   let html = '<option value="" disabled selected>Select a past week...</option>';
   past.forEach(w => {
@@ -404,7 +420,7 @@ async function initArchiveView() {
     html += `<option value="${w}">${fmtShort(start)} – ${fmtShort(end)}</option>`;
   });
   picker.innerHTML = html;
-  
+
   el('archive-week-strip').classList.add('hidden');
   el('archive-tasks-container').innerHTML = `<div style="text-align:center; padding: 40px; color: var(--text-tertiary);">Select a week to view archived tasks.</div>`;
 }
@@ -412,20 +428,20 @@ async function initArchiveView() {
 el('archive-week-picker').addEventListener('change', async (e) => {
   const week = e.target.value;
   if (!week) return;
-  
+
   el('archive-tasks-container').innerHTML = `<div style="text-align:center; padding: 40px;"><div class="spinner" style="margin:0 auto;"></div></div>`;
-  
+
   const wData = await GET(`/api/tasks?week=${week}`);
   if (!wData) return;
-  
+
   state.tasksCache.archive = wData.tasks;
   state.archiveWeek = week;
   state.archiveDayFilter = null; // reset day filter
-  
+
   const { start } = weekBounds(week);
   renderArchiveWeekStrip(start, wData.tasks);
   el('archive-week-strip').classList.remove('hidden');
-  
+
   renderArchiveTasks();
 });
 
@@ -440,7 +456,7 @@ function renderArchiveWeekStrip(startDate, tasks) {
     const num = d.getDate();
     const hasTask = tasks.some(t => t.dueDate === dateStr);
     const isActive = state.archiveDayFilter === dateStr;
-    
+
     html += `
       <div class="day-col" data-date="${dateStr}" style="cursor:pointer;">
         <span class="day-letter">${letter}</span>
@@ -454,7 +470,7 @@ function renderArchiveWeekStrip(startDate, tasks) {
   strip.innerHTML = html;
 }
 
-window.toggleArchiveDay = function(dateStr) {
+window.toggleArchiveDay = function (dateStr) {
   if (state.archiveDayFilter === dateStr) {
     state.archiveDayFilter = null;
   } else {
@@ -475,29 +491,29 @@ el('archive-week-strip').addEventListener('click', (e) => {
 function renderArchiveTasks() {
   const container = el('archive-tasks-container');
   let tasks = state.tasksCache.archive || [];
-  
+
   // Apply Assignee filter if set
   if (state.assigneeFilter !== 'all') {
     tasks = tasks.filter(t => t.campusLead === state.assigneeFilter);
   }
-  
+
   // Apply Day filter if set
   if (state.archiveDayFilter) {
     tasks = tasks.filter(t => t.dueDate === state.archiveDayFilter);
   }
-  
+
   if (!tasks.length) {
     container.innerHTML = `<div style="text-align:center; padding: 40px; color: var(--text-tertiary);">No tasks recorded for this ${state.archiveDayFilter ? 'day' : 'week'}.</div>`;
     return;
   }
-  
+
   tasks.sort((a, b) => {
     if (a.dueDate && b.dueDate) return new Date(a.dueDate) - new Date(b.dueDate);
     if (a.dueDate) return -1;
     if (b.dueDate) return 1;
     return 0;
   });
-  
+
   container.innerHTML = tasks.map(t => {
     // Modify slightly to ensure it looks muted for read-only
     return renderCard(t, true).replace('class="task-card', 'class="task-card archived-card');
@@ -528,10 +544,10 @@ el('save-password-btn').addEventListener('click', async () => {
   const newPassword = el('new-pw').value;
   const confirm = el('confirm-pw').value;
   const msg = el('settings-pw-msg');
-  
+
   if (!currentPassword || !newPassword || !confirm) return showMsg(msg, 'All fields required', false);
   if (newPassword !== confirm) return showMsg(msg, 'Passwords do not match', false);
-  
+
   const res = await PUT('/api/config', { currentPassword, newPassword });
   if (res && res.success) {
     el('current-pw').value = ''; el('new-pw').value = ''; el('confirm-pw').value = '';
@@ -562,7 +578,7 @@ function openModal(taskId = null, weekTarget = 'current') {
   el('task-form').reset();
   el('modal-delete-btn').classList.toggle('hidden', !taskId);
   populateDatalist();
-  
+
   if (taskId) {
     el('modal-title').textContent = 'Edit Task';
     const task = [...state.tasksCache.current, ...state.tasksCache.next].find(t => t.id === taskId);
@@ -584,7 +600,7 @@ function openModal(taskId = null, weekTarget = 'current') {
     el('week-field-group').classList.remove('hidden');
     el('task-week').value = weekTarget;
   }
-  
+
   el('task-modal').classList.remove('hidden');
 }
 
@@ -592,7 +608,7 @@ function closeSheet() {
   el('task-modal').classList.add('hidden');
 }
 el('modal-close-btn').addEventListener('click', closeSheet);
-el('task-modal').addEventListener('click', e => { if(e.target === el('task-modal')) closeSheet(); });
+el('task-modal').addEventListener('click', e => { if (e.target === el('task-modal')) closeSheet(); });
 
 el('task-form').addEventListener('submit', async e => {
   e.preventDefault();
@@ -606,7 +622,7 @@ el('task-form').addEventListener('submit', async e => {
     priority: el('task-priority').value,
   };
   if (!body.title) return;
-  
+
   el('modal-save-btn').disabled = true;
   if (id) {
     await PUT(`/api/tasks/${id}`, body);
@@ -615,7 +631,7 @@ el('task-form').addEventListener('submit', async e => {
     await POST('/api/tasks', body);
   }
   el('modal-save-btn').disabled = false;
-  
+
   closeSheet();
   await refreshTasks('current'); await refreshTasks('next');
   renderView(state.currentView);
@@ -663,8 +679,36 @@ el('confirm-ok-btn').addEventListener('click', () => closeConfirm(true));
 function esc(str) {
   if (!str) return '';
   return String(str).replace(/[&<>"']/g, m => ({
-    '&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'
+    '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;'
   })[m]);
 }
+
+// ── FIX 2: Theme Toggle ───────────────────────────────────────────────
+function applyTheme(theme) {
+  document.documentElement.setAttribute('data-theme', theme);
+  // Swap icon visibility: show moon icon when light (click → go dark), show sun when dark (click → go light)
+  const lightIcon = el('theme-icon-light');
+  const darkIcon  = el('theme-icon-dark');
+  if (theme === 'dark') {
+    lightIcon.style.display = 'block';  // show sun → click returns to light
+    darkIcon.style.display  = 'none';
+  } else {
+    lightIcon.style.display = 'none';
+    darkIcon.style.display  = 'block'; // show moon → click goes to dark
+  }
+}
+
+// Restore saved theme before paint
+(function initTheme() {
+  const saved = localStorage.getItem('mulearn-theme') || 'light';
+  applyTheme(saved);
+})();
+
+el('theme-btn').addEventListener('click', () => {
+  const current = document.documentElement.getAttribute('data-theme') || 'light';
+  const next = current === 'dark' ? 'light' : 'dark';
+  applyTheme(next);
+  localStorage.setItem('mulearn-theme', next);
+});
 
 boot();
